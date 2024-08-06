@@ -7,11 +7,7 @@ import json
 import os
 import logging
 
-# Ваш API-ключ
-API_KEY = '8f99d8bcfaf61db2c4b7d0eaf46ac6c1'
-
-# URL для API One Call
-API_URL = f'http://api.openweathermap.org/data/2.5/weather?q=London&appid={API_KEY}'
+API_URL = "http://api.openweathermap.org/data/2.5/weather?q=London&appid=8f99d8bcfaf61db2c4b7d0eaf46ac6c1"
 
 # Пути к файлам
 RAW_FILE_PATH = '/tmp/weather_data.json'
@@ -20,7 +16,15 @@ PARQUET_FILE_PATH = '/tmp/weather.parquet'
 
 def download_weather_data():
     try:
-        response = requests.get(API_URL)
+        headers = requests.utils.default_headers()
+
+        headers.update(
+            {
+                'User-Agent': 'My User Agent 1.0',
+            }
+        )
+
+        response = requests.get(API_URL, headers=headers)
         response.raise_for_status()  # Raise an error for bad status codes
         data = response.json()
         
@@ -69,7 +73,7 @@ def process_weather_data():
         # Log the processed data for debugging
         logging.info(f"Processed weather data: {weather_data}")
         
-        df = pd.DataFrame([weather_data])
+        df = pd.DataFrame(weather_data, index=[0])
         logging.info(f"Processed weather data: {df}")
 
         df.to_csv(PROCESSED_FILE_PATH, index=False)

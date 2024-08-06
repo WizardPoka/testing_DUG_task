@@ -1,0 +1,11 @@
+transaction_id,customer_id,product_id,product_category,amount,date
+1,1001,2001,Electronics,299.99,2024-01-01
+2,1002,2002,Clothing,49.99,2024-01-02
+3,1001,2003,Electronics,199.99,2024-01-03
+4,1003,2004,Groceries,15.99,2024-01-04
+5,1004,2005,Electronics,399.99,2024-02-01
+6,1002,2006,Clothing,29.99,2024-02-02
+7,1005,2007,Groceries,8.99,2024-02-03
+8,1006,2008,Books,14.99,2024-03-01
+9,1007,2009,Electronics,249.99,2024-03-05
+10,1003,2010,Books,24.99,2024-03-10
