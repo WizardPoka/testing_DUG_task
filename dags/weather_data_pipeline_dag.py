@@ -1,4 +1,3 @@
-# weather_data_pipeline_dag.py
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
@@ -10,10 +9,6 @@ import logging
 
 # Ваш API-ключ
 API_KEY = '8f99d8bcfaf61db2c4b7d0eaf46ac6c1'
-
-# Координаты города (например, Лондон)
-LAT = '51.5074'
-LON = '-0.1278'
 
 # URL для API One Call
 API_URL = f'http://api.openweathermap.org/data/2.5/weather?q=London&appid={API_KEY}'
@@ -31,6 +26,15 @@ def download_weather_data():
         
         # Log the response data for debugging
         logging.info(f"Data downloaded: {data}")
+        
+        # Log the current working directory
+        logging.info(f"Current working directory: {os.getcwd()}")
+        
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(RAW_FILE_PATH), exist_ok=True)
+        
+        # Log the full path where the file will be saved
+        logging.info(f"Saving data to {RAW_FILE_PATH}")
         
         with open(RAW_FILE_PATH, 'w') as f:
             json.dump(data, f)
@@ -66,11 +70,14 @@ def process_weather_data():
         logging.info(f"Processed weather data: {weather_data}")
         
         df = pd.DataFrame([weather_data])
+        logging.info(f"Processed weather data: {df}")
+
         df.to_csv(PROCESSED_FILE_PATH, index=False)
-        
+        p = df.to_csv(PROCESSED_FILE_PATH, index=False)
         # Log the file save operation
         logging.info(f"Processed data saved to {PROCESSED_FILE_PATH}")
-        
+        logging.info(f"Processed data saved to {p}")
+
     except Exception as e:
         logging.error(f"Error processing data: {e}")
         raise
@@ -79,10 +86,10 @@ def save_to_parquet():
     try:
         df = pd.read_csv(PROCESSED_FILE_PATH)
         df.to_parquet(PARQUET_FILE_PATH, index=False)
-        
+        p = df.to_parquet(PARQUET_FILE_PATH, index=False)
         # Log the file save operation
         logging.info(f"Data saved to {PARQUET_FILE_PATH}")
-        
+        logging.info(f"Data saved to {p}")
     except Exception as e:
         logging.error(f"Error saving data to Parquet: {e}")
         raise

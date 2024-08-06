@@ -42,6 +42,7 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     volumes:
       - ./dags:/opt/airflow/dags
+      - /opt/airflow/tmp:/opt/airflow/tmp
     depends_on:
       webserver:
         condition: service_started
