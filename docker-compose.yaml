@@ -1,0 +1,51 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 10s
+      retries: 5
+  webserver:
+    image: apache/airflow:2.5.1
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY: 'vyzyKTRS9-xa2299jHPMqfYE_13dioTDCufRUAF07lI='
+      AIRFLOW__WEBSERVER__SECRET_KEY: '60NQRfTIp1b0rxRdsXoacQ'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    volumes:
+      - ./dags:/opt/airflow/dags
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      bash -c "
+      airflow db upgrade &&
+      airflow users create --username admin --password admin --firstname admin --lastname admin --role Admin --email admin@example.com &&
+      airflow webserver"
+  scheduler:
+    image: apache/airflow:2.5.1
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY: 'vyzyKTRS9-xa2299jHPMqfYE_13dioTDCufRUAF07lI='
+      AIRFLOW__WEBSERVER__SECRET_KEY: '60NQRfTIp1b0rxRdsXoacQ'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    volumes:
+      - ./dags:/opt/airflow/dags
+    depends_on:
+      webserver:
+        condition: service_started
+    command: >
+      bash -c "airflow scheduler"
+volumes:
+  postgres-db-volume:
