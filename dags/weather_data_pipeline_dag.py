@@ -1,5 +1,3 @@
-# ==================================================================================================
-
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
@@ -8,6 +6,8 @@ import pandas as pd
 import json
 import os
 import logging
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 # ==================================================================================================
 
@@ -16,14 +16,29 @@ API_URL = "http://api.openweathermap.org/data/2.5/weather?q=London&appid=8f99d8b
 # ==================================================================================================
 
 # Пути к файлам
-RAW_FILE_PATH = '/tmp/weather_data.json'
-PROCESSED_FILE_PATH = '/tmp/processed_weather_data.csv'
-PARQUET_FILE_PATH = '/tmp/weather.parquet'
+HOME_DIR = os.path.expanduser("~")
+WEATHER_DATA_DIR = os.path.join(HOME_DIR, "weather_data")
+
+RAW_FILE_PATH = os.path.join(WEATHER_DATA_DIR, 'weather_data.json')
+PROCESSED_FILE_PATH = os.path.join(WEATHER_DATA_DIR, 'processed_weather_data.csv')
+PARQUET_FILE_PATH = os.path.join(WEATHER_DATA_DIR, 'weather.parquet')
 
 # ==================================================================================================
 
 def download_weather_data():
     try:
+        session = requests.Session()
+        retry = Retry(
+            total=5,
+            read=5,
+            connect=5,
+            backoff_factor=0.3,
+            status_forcelist=(500, 502, 504),
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        
         # Для решения ошибки requests.exceptions.ConnectionError
         headers = requests.utils.default_headers()
         headers.update(
@@ -32,7 +47,7 @@ def download_weather_data():
             }
         )
 
-        response = requests.get(API_URL, headers=headers)
+        response = session.get(API_URL, headers=headers)
         response.raise_for_status()  # Raise an error for bad status codes
         data = response.json()
         
@@ -87,10 +102,9 @@ def process_weather_data():
         logging.info(f"Processed weather data: {df}")
 
         df.to_csv(PROCESSED_FILE_PATH, index=False)
-        p = df.to_csv(PROCESSED_FILE_PATH, index=False)
+        
         # Log the file save operation
         logging.info(f"Processed data saved to {PROCESSED_FILE_PATH}")
-        logging.info(f"Processed data saved to {p}")
 
     except Exception as e:
         logging.error(f"Error processing data: {e}")
@@ -102,11 +116,9 @@ def save_to_parquet():
     try:
         df = pd.read_csv(PROCESSED_FILE_PATH)
         df.to_parquet(PARQUET_FILE_PATH, index=False)
-        p = df.to_parquet(PARQUET_FILE_PATH, index=False)
 
         # Log the file save operation
         logging.info(f"Data saved to {PARQUET_FILE_PATH}")
-        logging.info(f"Data saved to {p}")
     except Exception as e:
         logging.error(f"Error saving data to Parquet: {e}")
         raise
