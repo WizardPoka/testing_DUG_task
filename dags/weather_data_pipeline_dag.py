@@ -1,3 +1,5 @@
+# ==================================================================================================
+
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
@@ -7,17 +9,23 @@ import json
 import os
 import logging
 
+# ==================================================================================================
+
 API_URL = "http://api.openweathermap.org/data/2.5/weather?q=London&appid=8f99d8bcfaf61db2c4b7d0eaf46ac6c1"
+
+# ==================================================================================================
 
 # Пути к файлам
 RAW_FILE_PATH = '/tmp/weather_data.json'
 PROCESSED_FILE_PATH = '/tmp/processed_weather_data.csv'
 PARQUET_FILE_PATH = '/tmp/weather.parquet'
 
+# ==================================================================================================
+
 def download_weather_data():
     try:
+        # Для решения ошибки requests.exceptions.ConnectionError
         headers = requests.utils.default_headers()
-
         headers.update(
             {
                 'User-Agent': 'My User Agent 1.0',
@@ -58,6 +66,8 @@ def download_weather_data():
         logging.error(f"Unexpected error: {e}")
         raise
 
+# ==================================================================================================
+
 def process_weather_data():
     try:
         with open(RAW_FILE_PATH, 'r') as f:
@@ -86,11 +96,14 @@ def process_weather_data():
         logging.error(f"Error processing data: {e}")
         raise
 
+# ==================================================================================================
+
 def save_to_parquet():
     try:
         df = pd.read_csv(PROCESSED_FILE_PATH)
         df.to_parquet(PARQUET_FILE_PATH, index=False)
         p = df.to_parquet(PARQUET_FILE_PATH, index=False)
+
         # Log the file save operation
         logging.info(f"Data saved to {PARQUET_FILE_PATH}")
         logging.info(f"Data saved to {p}")
@@ -98,16 +111,20 @@ def save_to_parquet():
         logging.error(f"Error saving data to Parquet: {e}")
         raise
 
+# ==================================================================================================
+
 default_args = {
     'owner': 'airflow',
     'start_date': days_ago(1),
 }
 
+# ==================================================================================================
+
 with DAG(
     'weather_data_pipeline_dag',
     default_args=default_args,
     description='A simple weather data pipeline',
-    schedule_interval='0 0 * * *',
+    schedule_interval='0 0 * * *', # Этот DAG будет выполняться ежедневно в полночь
 ) as dag:
 
     download_task = PythonOperator(
@@ -126,3 +143,5 @@ with DAG(
     )
 
     download_task >> process_task >> save_parquet_task
+
+# ==================================================================================================
