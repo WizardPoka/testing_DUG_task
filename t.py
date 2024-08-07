@@ -4,21 +4,26 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import random
+from datetime import datetime, timedelta
 
 # ==================================================================================================
 
-# Создаем данные для файла transactions.csv
-data = {
-    "transaction_id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    "customer_id": [1001, 1002, 1001, 1003, 1004, 1002, 1005, 1006, 1007, 1003],
-    "product_id": [2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010],
-    "product_category": ["Electronics", "Clothing", "Electronics", "Groceries", "Electronics",
-                         "Clothing", "Groceries", "Books", "Electronics", "Books"],
-    "amount": [299.99, 49.99, 199.99, 15.99, 399.99, 29.99, 8.99, 14.99, 249.99, 24.99],
-    "date": ["2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04", "2024-02-01",
-             "2024-02-02", "2024-02-03", "2024-03-01", "2024-03-05", "2024-03-10"]
-}
+# Возможные категории продуктов
+product_categories = [
+    "Electronics", "Clothing", "Groceries", "Books", 
+    "Home Appliances", "Toys", "Sports Equipment"
+]
 
+# Создание случайных данных
+data = {
+    "transaction_id": list(range(1, 101)),
+    "customer_id": [random.randint(1001, 1020) for _ in range(100)],  # Случайный выбор customer_id
+    "product_id": [random.randint(2001, 2030) for _ in range(100)],   # Случайный выбор product_id
+    "product_category": [random.choice(product_categories) for _ in range(100)],  # Случайная категория
+    "amount": [round(random.uniform(5.0, 500.0), 2) for _ in range(100)],  # Случайная сумма
+    "date": [(datetime(2024, 1, 1) + timedelta(days=random.randint(0, 100))).strftime('%Y-%m-%d') for _ in range(100)]  # Случайная дата в диапазоне
+}
 # ==================================================================================================
 
 # Сохраняем данные в CSV файл
@@ -93,7 +98,7 @@ df['year_month'] = df['date'].dt.to_period('M').astype(str)
 
 # Подготовка сводной таблицы
 pivot_table = df.pivot_table(
-    index='customer_id', 
+    index='product_category', 
     columns='year_month', 
     values='amount', 
     aggfunc='sum', 
